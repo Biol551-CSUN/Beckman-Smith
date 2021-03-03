@@ -1,0 +1,115 @@
+---
+title: "RMarkdown Lab Practice"
+author: "Natalie"
+date: "3/3/2021"
+output:
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    theme: lumen
+---
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE, 
+                      fig.path = "../Output/")
+```
+# Introduction
+Today we will use **chemistry data** from **Hawaii** to practice in **RMarkdown**.  
+The two sites looked at were _Black Point_ and _Wailupe_.  
+The chemistry data recorded at each site included:  
+1. Temperature  
+2. Salinity  
+3. pH  
+4. Phosphate  
+5. Silicate  
+6. Nitrate and nitrite  
+7. Total alkalinity  
+8. Percent SGD  
+
+# Load libraries
+```{r}
+library(tidyverse)
+library(here)
+library(kableExtra) # for making tables 
+
+```
+
+# Load data
+```{r}
+ChemData<-read_csv(here("Week_6","Data", "chemicaldata_maunalua.csv"))
+```
+
+# Make a table
+```{r}
+ChemData_summary <- ChemData %>% # creates summary data of each site using means
+  group_by(Site) %>% 
+  summarise(mean_temp = mean(Temp_in, na.rm = TRUE),
+            mean_salinity = mean(Salinity, na.rm = TRUE),
+            mean_pH = mean(pH, na.rm = TRUE),
+            mean_phosphate = mean(Phosphate, na.rm = TRUE),
+            mean_silicate = mean(Silicate, na.rm = TRUE),
+            mean_NN = mean(NN, na.rm = TRUE),
+            mean_TA = mean(TA, na.rm = TRUE),
+            mean_pctsgd = mean(percent_sgd, na.rm = TRUE)) %>% 
+  rename('Nitrate+Nitrite (umol/L)' = "mean_NN",  # renames columns  
+         'Phosphate (umol/L)' = "mean_phosphate",
+         'Silicate (umol/L)' = "mean_silicate",
+         'Total alkalinity (umol/kg)' = "mean_TA",
+         'Percent SGD' = "mean_pctsgd",
+         'Temperature (C)' = "mean_temp",
+         'Salinity' = "mean_salinity",
+         'pH' = "mean_pH") %>%
+  mutate(Site = ifelse(Site == "BP", "Black Point", "Wailupe")) %>% # renames site rows
+
+  kbl(caption = "Summary table for the mean chemistry data at each site.") %>% # creates table with caption
+  kable_minimal() %>% # selects table style
+  kable_styling(bootstrap_options = c("striped", "hover")) # makes rows more defined 
+
+ChemData_summary #shows table 
+```
+
+# Make a plot 
+```{r ChemFig, fig.cap="Summary chemistry data plotted for each site.", fig.topcaption=TRUE}
+ChemData_summary <- ChemData %>% 
+  group_by(Site) %>% 
+  summarise(mean_temp = mean(Temp_in, na.rm = TRUE),
+            mean_salinity = mean(Salinity, na.rm = TRUE),
+            mean_pH = mean(pH, na.rm = TRUE),
+            mean_phosphate = mean(Phosphate, na.rm = TRUE),
+            mean_silicate = mean(Silicate, na.rm = TRUE),
+            mean_NN = mean(NN, na.rm = TRUE),
+            mean_TA = mean(TA, na.rm = TRUE),
+            mean_pctsgd = mean(percent_sgd, na.rm = TRUE)) %>% 
+  rename('Nitrate+Nitrite (umol/L)' = "mean_NN",  
+         'Phosphate (umol/L)' = "mean_phosphate",
+         'Silicate (umol/L)' = "mean_silicate",
+         'Total alkalinity (umol/kg)' = "mean_TA",
+         'Percent SGD' = "mean_pctsgd",
+         'Temperature (C)' = "mean_temp",
+         'Salinity' = "mean_salinity",
+         'pH' = "mean_pH") %>%
+  mutate(Site = ifelse(Site == "BP", "Black Point", "Wailupe")) %>% 
+  pivot_longer(cols = c('Temperature (C)':'Percent SGD'), # selects the cols you want to pivot  
+               names_to = "Variables", # the names of the new cols with all the column names 
+               values_to = "Values") # the names of the new col with all the values 
+view(ChemData_summary)
+
+ggplot(data = ChemData_summary,
+      aes(x = Variables,
+          y = Values,
+          color = Site,
+          fill= Site
+          )) + 
+  geom_col(position = "dodge") + # makes bars next to each other instead of overlapping 
+  facet_wrap(~Variables, scales = "free") +
+  labs(x = "", # gets rid of x label
+       y = "" # gets rid of y label
+        ) +
+  theme(axis.title.x=element_blank(), # all of this gets rid of redundant labels on each facet
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+```
+
