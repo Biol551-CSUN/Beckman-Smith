@@ -1,0 +1,82 @@
+---
+title: "Map Lab Practice"
+author: "Natalie Beckman-Smith"
+date: "3/8/2021"
+output:
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    theme: lumen
+    
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE)
+```
+
+# Introduction
+Today we will be practicing creating maps in R using the Tidy Tuesday dataset **"San Francisco Trees."** 
+
+# Load libraries
+```{r}
+library(tidyverse)
+library(tidytuesdayR)
+library(here)
+library(maps)
+library(mapdata)
+library(mapproj)
+```
+
+# Load data
+```{r}
+tuesdata <- tidytuesdayR::tt_load('2020-01-28') 
+sf_trees <- tuesdata$sf_trees
+
+```
+
+# Tidy data
+```{r}
+county<-map_data("county") #pulls in US county data for maps 
+
+SF_map<-county %>% 
+  filter(subregion == "san francisco") #filters out only SanFran
+
+sf_data<-sf_trees %>% 
+  filter(latitude < 40 & #filters only points inside SanFran
+         longitude > -125) %>% 
+  filter(species == "Sequoia sempervirens :: Coast Redwood") %>%  #filters only Coast Redwoods
+  mutate(longitude = longitude + 0.03, #corrects for strange skewing of points we experienced 
+         latitude = latitude - 0.0055) %>% 
+  drop_na(legal_status) #drops any rows with no legal status 
+  
+```
+
+# Create map
+```{r}
+ggplot() +
+  geom_polygon(data = SF_map, #creates map of SanFran
+               aes(x = long, 
+                   y = lat, 
+                   group = group), #makes lines connect properly
+               fill = "tan", #makes county tan
+               color = "black") + #gives map black border
+  geom_point(data = sf_data, #makes new layer of tree plot points
+             aes(x = longitude,
+                 y = latitude,
+                 shape = legal_status), #assigns point shapes based on legal status
+             color = "chartreuse4", #changes point color
+             alpha = 0.5, #changes transparency
+             size = 3) + #changes marker size
+  theme_minimal() +
+  guides(fill = F) +
+  theme(panel.background = element_rect(fill = "#99CCFF"), #changes background color
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + #removes grid lines from map
+  coord_map() +  #uses the default "mercator"
+  labs(y = "Latitude",
+       x = "Longitude",
+       title = "Map of Coast Redwood Trees in San Francisco County",
+       subtitle = "Trees marked by legal status",
+       shape = "Legal Status") +
+  ggsave(here("Week_7","Output","SF_trees_map.pdf"))
+```
