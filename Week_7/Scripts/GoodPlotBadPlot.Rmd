@@ -1,0 +1,216 @@
+---
+title: "Good Plot, Bad Plot"
+author: "Natalie Beckman-Smith"
+date: "3/22/2021"
+output:
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    theme: spacelab
+    
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE)
+```
+
+# Introduction
+Today, I will be demonstrating the differences between good and bad data visualization using the Tidy Tuesday dataset _**UFO Sightings Around the World**_.   
+![ufo](https://media3.giphy.com/media/2Wf4qYgMmou4zjg9qX/giphy.gif) ![dancing alien](https://media4.giphy.com/media/1oE3Ee4299mmXN8OYb/source.gif)
+
+# Load Libraries
+```{r}
+library(tidyverse)
+library(tidytuesdayR)
+library(here)
+library(maps)
+library(mapdata)
+library(mapproj)
+library(plotrix)
+```
+
+# Load Data
+```{r}
+ufo_sightings <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-06-25/ufo_sightings.csv")
+```
+
+# Tidy Data
+```{r}
+ufo_states_clean <- ufo_sightings %>% 
+  filter(country == "us") %>% #filtered out only sightings from the US
+  filter(state != "ak", #got rid of non-continental states and non-states 
+         state != "hi", 
+         state != "pr",
+         state != "dc") %>% 
+  transform(count = ave(state, state, FUN = length)) %>% #created a new column of counts of states  
+  rename(region = state) %>% #changed the name of the state column to match the map library's 
+  select(region, count) %>% #got rid of all columns except the states(regions) and their sightings count
+  pivot_wider(names_from = region, 
+              values_from = count,
+              values_fn = length) %>% #pivoted wider and used this argument to get rid of repeats 
+  rename(alabama = al, #renamed all the states to match the mapping library
+         arizona = az,
+         arkansas = ar,
+         california = ca,
+         colorado = co,
+         connecticut = ct, 
+         delaware = de,
+         florida = fl,
+         georgia = ga,
+         idaho = id,
+         illinois = il,
+         indiana = "in", 
+         iowa = ia,
+         kansas = ks,
+         kentucky = ky, 
+         louisiana = la,
+         maine = me, 
+         maryland = md, 
+         massachusetts = ma, 
+         michigan = mi,
+         minnesota = mn, 
+         mississippi = ms, 
+         missouri = mo, 
+         montana = mt, 
+         nebraska = ne,
+         nevada = nv, 
+         "new hampshire" = nh,
+         "new jersey" = nj,
+         "new mexico" = nm, 
+         "new york" = ny, 
+         "north carolina" = nc, 
+         "north dakota" = nd, 
+         ohio = oh,
+         oklahoma = ok,
+         oregon = or,
+         pennsylvania = pa,
+         "rhode island" = ri,
+         "south carolina" = sc,
+         "south dakota" = sd,
+         tennessee = tn, 
+         texas = tx,
+         utah = ut, 
+         vermont = vt,
+         virginia = va,
+         washington = wa, 
+         "west virginia" = wv,
+         wisconsin = wi, 
+         wyoming = wy) %>% 
+pivot_longer(cols = texas:"north dakota", #returned to longer format 
+             names_to = "region",
+             values_to = "count")
+```
+
+# Bad Plot
+Here we see an example of a terrible plot. From the get-go, a **bar graph combined with a polar coordinate graph** is not a good choice to represent this data. It is **overly confusing**. The other most glaring problem with this plot is that the legend is **overlapping and obscuring** the graph. The **colors** for all of the chart elements make the figure hard to read and look at. The title, subtitle, and data labels are **not descriptive** and are **formatted incorrectly**. The legend, bar labels, and coordinate labels are all **redundant**. It is impossible to tell what exactly the bar length is measuring using the axis, and the mass of bar labels towards the center completely blocks out the bars themselves.    
+```{r}
+mycols <- c("#0073C2FF", "#EFC000FF", "#868686FF", "#CD534CFF","#07F00B", "#e68a3b", "#b1b6da",  "#b1b6da", "#2c8422", "#55f526", "#fbf84a", "#06bd52", "#8d6097", "#8f1adf", "#a7b50f", "#fe18a5", "#481336", "#1bccdf", "#e24f11", "#7e5a61", "#b8fc5d", "#6122f1", "#3b6679", "#d8b8a1", "#0073C2FF", "#EFC000FF", "#868686FF", "#CD534CFF","#07F00B", "#e68a3b", "#b1b6da",  "#b1b6da", "#2c8422", "#55f526", "#fbf84a", "#06bd52", "#8d6097", "#8f1adf", "#a7b50f", "#fe18a5", "#481336", "#1bccdf", "#e24f11", "#7e5a61", "#b8fc5d", "#6122f1", "#3b6679", "#d8b8a1")
+#chose random colors for the states
+ggplot(ufo_states_clean, 
+       aes(x = count, 
+           y = region, 
+           fill = region)) +
+  geom_bar(width = 1, #created a bar graph
+           stat = "identity", 
+           color = "green") + #made the bar outlines green
+  coord_polar("y", start = 0) + #put the bar graph onto a polar coordinates graph
+  geom_text(aes(y = region, #put the state labels on the bars
+                label = region), 
+            color = "red") + #made the labels red
+  scale_fill_manual(values = mycols,
+                    guide = guide_legend(keyheight = unit(5, units = "mm"), #changed the legend box height
+                                         keywidth = unit(8, units = "mm"), #changed the legend box width
+                                         label.position = "bottom", #changed the legend label position
+                                         title.position = 'top', #changed the legend title position
+                                         nrow = 3)) + #changed number of box rows 
+  theme(text = element_text(color = "#32A852"), #changed the chart element colors
+        plot.background = element_rect(fill = "#0483B7", color = NA),
+        panel.background = element_rect(fill = "#EA44CE", color = NA),
+        legend.background = element_rect(fill = "#5C77B6", color = NA),
+        plot.title = element_text(size = 5, #made the title small
+                                  hjust = 0.01, #moved the title to the left
+                                  color = "#05F167", #changed the title color 
+                                  margin = margin(b = -0.1, t = 0.4, l = 2, unit = "cm")),
+        plot.subtitle = element_text(size = 17, #made the subtitle larger
+                                     hjust = 0.1, #changed the subtitle position
+                                     color = "#DD9C2E", #changed the subtitle color
+                                     margin = margin(b = -0.1, t = 0.43, l = 2, unit = "cm")),
+        legend.title = element_text(size = 25), #changed the legend title size
+        legend.text = element_text(size = 5), #changed the legend text size
+        legend.position = c(0.2, 0.09)) + #changed the legend position
+  labs(title = "ufo sightings", #gave the title
+       subtitle = "sample text") + #gave the subtitle
+   ggsave(here("Week_7","Output","BadPlot.png")) #saved the plot as a png 
+```
+
+# Bonus Bad Plot
+#### Although not made in ggplot2, I wanted to try my hand at the infamous 3D pie chart. I like that it looks like a UFO itself. 
+This plot is a **pie chart**, and pie charts are notoriously bad at representing data accurately. On top of that, it is a **3D** pie chart, which makes it unnecessarily more complex and adds an extra dimension that no variable is being plotted on. The labels are **impossible to read**, as they overlap each other and are a bad color. The **single color** of the pie makes it more difficult to distinguish the different states from one another. The data labels and title are also **improperly capitalized**. The title is **not descriptive enough**, and there are **no actual numbers** that the pie graph represents. The data source is **not credited** with a caption. The most one could glean from this graph is that California has the most UFO sightings.    
+```{r}
+par(bg = "black", #changed background color
+    col.main = "red") #changed title color
+pie3D(ufo_states_clean$count, #created a 3D pie chart with the sightings count column of the cleaned ufo data
+      labels = ufo_states_clean$region, #used the state column for labels 
+      edges = 1, #made the edges of each slice flat
+      radius = 3, #altered the radius of the pie
+      height = 0.2, #made the pie taller
+      theta = 0.2, #rotated the viewing angle of the pie
+      border = "yellow", #changed the border color
+      col = "green", #changed the slice color 
+      labelcol = "red", #changed the label color
+      labelcex = 1, #changed the label size
+      explode = 0.1, #moved the slices slightly apart
+      shade = 0.5, #shaded the slices for a more 3D effect
+      main = "ufo sightings") #added a title
+  
+```
+
+# Good Plot
+In contrast, here is an example of a better graph representing the same data. This plot uses a **map** of the states filled in using a gradient to represent the number of sightings. The **colors** are easier to understand, and the **legend** clearly states the number of sightings being portrayed. The title, legend, and caption are all **legible and detailed**.   
+```{r}
+states_map <- map_data("state") #brought in map data for the US states
+sightings_map <- left_join(states_map, ufo_states_clean, by = "region") #joined the state map data with my ufo data 
+
+ggplot(sightings_map, #created a ggplot with this combined data
+       aes(long, 
+           lat, 
+           group = group)) +
+  geom_polygon(aes(fill = count), #created a geom_polygon using the sightings count as the fill  
+               color = "white") + #made the borders between states white
+  scale_fill_gradient(name = "UFO Sightings", #added a gradient scale for the fill, gave the legend a title 
+                      low = "lightgreen", high = "darkgreen", #set the colors for the fill gradient 
+                      trans = "log10", #changed gradient to log scale to make it easier to see all of the states and not just CA
+                      breaks = c(150,300,2000,4000,6000,8000), #set which values I wanted to see labeled in the legend 
+                      guide = guide_legend(keyheight = unit(5, units = "mm"), #changed the legend box height
+                                           keywidth = unit(8, units = "mm"), #changed the legend box width
+                                           label.position = "bottom", #changed the legend label position
+                                           title.position = 'top', #changed the legend title position
+                                           nrow = 1)) + #made it so all the boxes appeared in a single row
+  theme_void() + #got rid of the grid-lines and axes 
+  theme(text = element_text(color = "#E8E5E6"), #changed the font color for the legend 
+        plot.background = element_rect(fill = "#1A010C", color = NA), #changed the plot background color 
+        panel.background = element_rect(fill = "#1A010C", color = NA), #changed the panel background color
+        legend.background = element_rect(fill = "#1A010C", color = NA), #changed the legend background color
+        plot.title = element_text(size = 40, #changed the size of the plot title
+                                  hjust = 0.1, #changed the horizontal position of the title
+                                  color = "#E8E5E6", #changed the color of the title
+                                  margin = margin(b = -0.1, t = 0.4, l = 2, unit = "cm")), #changed the margins of the title
+        plot.subtitle = element_text(size = 17, #changed the size of the subtitle
+                                     hjust = 0.1, #changed the horizontal position of the subtitle
+                                     color = "#E8E5E6", #changed the color of the subtitle
+                                     margin = margin(b = -0.1, t = 0.43, l = 2, unit = "cm")), #changed the margins of the subtitle
+        plot.caption = element_text(size = 12, #changed the size of the caption
+                                    hjust = 0.95, #changed the horizontal position of the caption
+                                    vjust = 3, #changed the vertical position of the caption
+                                    color = "#E8E5E6", #changed the color of the caption
+                                    margin = margin(b = 0.3, r = -99, unit = "cm")), #changed the margins of the caption
+        legend.title = element_text(size = 12), #changed the size of the legend title
+        legend.text = element_text(size = 10), #changed the size of the legend labels
+        legend.position = c(0.2, 0.09)) + #changed the legend position on the plot
+  labs(title = "UFO Sightings by State", #added a plot title
+       subtitle = "Number of sightings reported from 1910 - 2013", #added a subtitle
+       caption = "Data from the National UFO Reporting Center") + #added a caption
+  ggsave(here("Week_7","Output","GoodPlot.png")) #saved the plot as a png 
+
+```
