@@ -1,0 +1,83 @@
+---
+title: "Creating a Function"
+author: "Natalie Beckman-Smith"
+date: "3/24/2021"
+output: 
+  html_document:
+      toc: true
+      toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+# Introduction
+Today, we are practicing creating functions of our own. 
+
+# Load Libraries
+```{r}
+library(palmerpenguins)
+library(tidyverse)
+```
+ 
+# Function Creation
+
+### A function to create a ratio between body mass and any other measurement:
+```{r}
+bmratio <- function(data, body_mass, length) { 
+  ratio <- data %>% 
+    mutate(body_mass_ratio = {{body_mass}} / {{length}}) %>% #makes new column 
+    relocate(body_mass_ratio, .before = {{body_mass}}) #moves new column 
+  return(ratio)
+}
+
+```
+
+### Test 1
+```{r}
+bmratio(data = penguins, body_mass = body_mass_g, length = bill_length_mm) #body mass to bill length ratio
+```
+
+### Test 2
+```{r}
+bmratio(data = penguins, body_mass = body_mass_g, length = flipper_length_mm) #body mass to flipper length ratio
+```
+
+### A function to create a plot:
+```{r}
+myplot<-function(data, x, y, group){ #assigns variables
+  data<-data %>% 
+    drop_na({{group}}) #removes NAs
+  ggplot(data, #assigns dataframe
+         aes(x = {{x}}, y = {{y}}, #assigns variables 
+             color = {{group}}, #assigns colors and shapes to groups 
+             fill = {{group}}, 
+             shape = {{group}})) + 
+    geom_point() + #creates scatter plot
+    theme_bw() + #sets theme
+    theme(axis.title = element_text(size = 12), #changes font sizes
+          axis.text = element_text(size = 12),
+          legend.title = element_text(size = 12),
+          legend.text = element_text(size = 12))
+}
+```
+
+### Test 1
+```{r}
+myplot(data = penguins, 
+       x = body_mass_g, 
+       y = bill_length_mm,
+       group = species)
+```
+
+### Test 2
+```{r}
+myplot(data = penguins, 
+       x = body_mass_g, 
+       y = flipper_length_mm,
+       group = species)
+```
+
