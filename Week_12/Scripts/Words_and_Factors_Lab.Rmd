@@ -1,0 +1,75 @@
+---
+title: 'Week 12: Working with Words and Factors'
+author: "Natalie Beckman-Smith"
+date: "4/21/2021"
+output: 
+  html_document:
+      toc: true
+      toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+# Introduction 
+Today, we are cleaning up a dataset using what we learned about words and factors.
+
+# Load Libraries
+```{r}
+library(tidyverse)
+library(here)
+library(tidytext) #used to clean up stray metacharacters
+library(forcats) #used to reorder factors
+library(janitor) #used to clean up column names
+library(PNWColors)
+```
+
+# Load Data
+```{r}
+intertidal<-read_csv(here("Week_12","Data", "intertidaldata.csv"))
+```
+
+# Data Cleaning and Analysis
+```{r}
+intertidalclean <- intertidal %>% 
+  clean_names() #automatically cleanly renamed the columns in the dataset 
+
+intertidalclean$quadrat <- intertidalclean$quadrat %>% #selected only the quadrat column
+  str_replace_all(" ", "") %>% #got rid of the spaces
+  str_replace_all("\\.", "") %>%  #got rid of the stray period
+  str_replace_all("1", "") #got rid of the stray 1
+
+intertidalclean <- intertidalclean %>% 
+  pivot_longer(c(4:10), #selected only percent cover variables
+               names_to = "organism", #put their names all under a new organism column
+               values_to = "percent_cover") %>% #put their values under a new percent cover column 
+  mutate(quadrat = factor(quadrat)) #changed quadrat variable into a factor
+
+barnacles <- intertidalclean %>% #new dataset with only barnacles
+  filter(organism %in% c("gooseneck_barnacles","small_barnacles","large_barnacles"))
+                
+```
+
+# Data Visualization 
+```{r}
+pal <- pnw_palette("Spring",3) #assigned color palette
+
+ggplot(data = barnacles,
+       aes(x = fct_inorder(quadrat, ordered = NA), #reordered tidal height by order it was in the dataset
+           y = percent_cover, 
+           fill = fct_inorder(organism, ordered = NA))) + #reordered the barnacles by order they were in the dataset 
+  geom_col(position = "dodge") +
+  labs(title = "Percent cover of barnacles at different tidal heights", #changed plot labels 
+       fill = "organism",
+       x = "tidal height",
+       y = "percent cover") +
+    scale_fill_manual(values = pal, #changed color 
+                      labels = c("small barnacles", "large barnacles", "gooseneck barnacles")) + #changed legend variable labels 
+  theme_classic() +
+  ggsave(here("Week_12","Output","barnacles.png"),
+         width = 7,
+         height = 5)
+```
