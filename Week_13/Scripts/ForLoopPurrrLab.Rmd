@@ -1,0 +1,68 @@
+---
+title: "For Loops and Purrr"
+author: "Natalie Beckman-Smith"
+date: "4/26/2021"
+output: 
+  html_document:
+      toc: true
+      toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+# Introduction 
+Today, we are doing iterative coding.
+
+# Load Libraries
+```{r}
+library(tidyverse)
+library(here)
+```
+
+# For Loop
+```{r}
+TPPath <- here("Week_13", "Data") #point to folder location
+files <- dir(path = TPPath, pattern = ".csv") #specify file pattern to look for
+
+TP_data <- data.frame(matrix(nrow = length(files), ncol = 5)) #make space by making empty dataframe
+colnames(TP_data) <- c("filename","mean_temp","SD_temp","mean_light","SD_light") #add column names 
+
+raw_data <- read_csv(paste0(TPPath,"/",files[1])) #test by reading in first file 
+head(raw_data)
+
+mean_temp <- mean(raw_data$Temp.C, na.rm = TRUE) #calculate mean temp
+SD_temp <- sd(raw_data$Temp.C, na.rm = TRUE) #calculate SD temp
+mean_light <- mean(raw_data$Intensity.lux, na.rm = TRUE) #calculate mean temp
+SD_light <- sd(raw_data$Intensity.lux, na.rm = TRUE) #calculate SD temp
+
+for (i in 1:length(files)){ #loop
+raw_data <- read_csv(paste0(TPPath,"/",files[i])) #loop over raw data
+TP_data$filename[i]<-files[i] #add in columns
+TP_data$mean_temp[i]<-mean(raw_data$Temp.C, na.rm =TRUE) #add in means and SD 
+TP_data$SD_temp[i]<-sd(raw_data$Temp.C, na.rm =TRUE)
+TP_data$mean_light[i]<-mean(raw_data$Intensity.lux, na.rm =TRUE)
+TP_data$SD_light[i]<-sd(raw_data$Intensity.lux, na.rm =TRUE)
+} 
+TP_data
+```
+
+# Purrr
+```{r}
+TPPath <- here("Week_13", "Data") #point to folder location
+files <- dir(path = TPPath, pattern = ".csv", full.names = TRUE) #specify file pattern to look for, get full file names
+
+data <- files %>%
+  set_names()%>% #set ID of each list to the file name
+  map_df(read_csv,.id = "filename") %>% #map everything dataframe and put ID in column called filename
+  group_by(filename) %>%
+  summarise(mean_temp = mean(Temp.C, na.rm = TRUE), #calculate summary stats
+            SD_temp = sd(Temp.C, na.rm = TRUE),
+            mean_light = mean(Intensity.lux,na.rm = TRUE),
+            SD_light = sd(Intensity.lux,na.rm = TRUE))
+data
+```
+
